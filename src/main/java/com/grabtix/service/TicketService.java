@@ -9,5 +9,4 @@ import java.util.List;
 public interface TicketService {
     Ticket reserveTicket(TicketRequest ticketRequest);
     List<TicketResponse> viewMyTicket();
-    void deleteTicket();
 }

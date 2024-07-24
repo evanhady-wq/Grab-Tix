@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -31,7 +32,7 @@ public class TransactionController {
     }
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    @PatchMapping("/cancel")
+    @PatchMapping("/cancel/{id}")
     public ResponseEntity<CommonResponse<TransactionResponse>> cancel(@PathVariable String id){
         transactionService.cancelTransaction(id);
         CommonResponse<TransactionResponse> response = generateResponse("Transaction Cancelled!", Optional.empty());
@@ -40,11 +41,17 @@ public class TransactionController {
 
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    @PatchMapping("/payment")
+    @PatchMapping("/payment/{id}")
     public ResponseEntity<CommonResponse<TransactionResponse>> successPaid(@PathVariable String id){
         TransactionResponse transactionResponse = transactionService.payment(id);
         CommonResponse<TransactionResponse> response = generateResponse("Transaction Success, Here is Your Ticket!", Optional.of(transactionResponse));
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @GetMapping
+    public List<TransactionResponse> viewMyTransaction(){
+        return transactionService.viewMyTransaction();
     }
 
     private CommonResponse<TransactionResponse> generateResponse(String message, Optional<TransactionResponse> transactionResponse) {
@@ -53,7 +60,5 @@ public class TransactionController {
                 .data(transactionResponse)
                 .build();
     }
-//    TransactionResponse purchaseTicket(TransactionRequest transactionRequest);
-//    void cancelTransaction(String id);
-//    void payment(String id);
+
 }

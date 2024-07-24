@@ -45,7 +45,6 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = Ticket.builder()
                 .event(event)
-                .customer(customer)
                 .ticketType(ticketRequest.getTicketType())
                 .price(price)
                 .build();
@@ -62,20 +61,15 @@ public class TicketServiceImpl implements TicketService {
         User loggedIn = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Customer customer = customerRepository.findByUserId(loggedIn.getId());
 
-        return ticketRepository.findTicketByCustomerId(customer.getId()).stream().map(this::convertToResponse)
+        return ticketRepository.findPaidTicket(customer.getId()).stream().map(this::convertToResponse)
                 .toList();
 
     }
 
-    @Override
-    public void deleteTicket() {
-
-    }
 
     private TicketResponse convertToResponse(Ticket ticket) {
         return TicketResponse.builder()
                 .id(ticket.getId())
-                .customerId(ticket.getCustomer().getId())
                 .eventId(ticket.getEvent().getId())
                 .eventName(ticket.getEvent().getName())
                 .type(ticket.getTicketType())

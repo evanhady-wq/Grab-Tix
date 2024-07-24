@@ -14,7 +14,6 @@ public class TicketResponse {
     private String id;
     private String eventId;
     private String eventName;
-    private String customerId;
     private Ticket.Type type;
     private Double price;
 }

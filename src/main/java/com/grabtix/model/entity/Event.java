@@ -58,4 +58,12 @@ public class Event {
             this.regularQuota -= quantity;
         }
     }
+
+    public void increaseQuota(Ticket.Type type){
+        if (type == Ticket.Type.VIP) {
+            this.vipQuota += 1;
+        } else {
+            this.regularQuota += 1;
+        }
+    }
 }

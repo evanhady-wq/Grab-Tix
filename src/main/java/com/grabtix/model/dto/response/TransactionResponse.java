@@ -18,7 +18,7 @@ public class TransactionResponse {
     private String id;
     private LocalDate transactionDate;
     private String customerId;
-    private List<TicketResponse> ticketResponses;
+    private List<TicketResponse> tickets;
     private Integer qty;
     private Double totalPrice;
     private Transaction.Status status;

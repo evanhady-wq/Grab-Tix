@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 public class TicketRequest {
     private String id;
     private String eventId;
-    private String customerId;
     private Ticket.Type ticketType;
     private Double price;
 }

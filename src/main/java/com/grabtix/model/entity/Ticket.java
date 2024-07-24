@@ -22,10 +22,6 @@ public class Ticket {
     @JoinColumn(name = "event_id")
     private Event event;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
-
     @Enumerated(EnumType.STRING)
     private Type ticketType;
 

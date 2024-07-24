@@ -4,11 +4,9 @@ import com.grabtix.exceptions.ResourceNotFoundException;
 import com.grabtix.model.dto.request.TransactionRequest;
 import com.grabtix.model.dto.response.TicketResponse;
 import com.grabtix.model.dto.response.TransactionResponse;
-import com.grabtix.model.entity.Customer;
-import com.grabtix.model.entity.Ticket;
-import com.grabtix.model.entity.Transaction;
-import com.grabtix.model.entity.User;
+import com.grabtix.model.entity.*;
 import com.grabtix.repository.CustomerRepository;
+import com.grabtix.repository.EventRepository;
 import com.grabtix.repository.TicketRepository;
 import com.grabtix.repository.TransactionRepository;
 import com.grabtix.service.TicketService;
@@ -21,15 +19,16 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
-    private final TicketRepository ticketRepository;
     private final TransactionRepository transactionRepository;
     private final CustomerRepository customerRepository;
     private final TicketService ticketService;
+    private final EventRepository eventRepository;
 
     @Override
     @Transactional
@@ -67,19 +66,27 @@ public class TransactionServiceImpl implements TransactionService {
         Customer customer = customerRepository.findByUserId(loggedIn.getId());
 
         List<Transaction> transactions = transactionRepository.findTransactionByCustomerId(customer.getId());
-
         Transaction cancelTransaction = null;
+
         for (Transaction transaction : transactions) {
             if (transaction.getId().equals(id)) {
                 transaction.setStatus(Transaction.Status.CANCELLED);
                 cancelTransaction = transaction;
+
+                for (Ticket ticket : cancelTransaction.getTicket()) {
+                    Event event = ticket.getEvent();
+                    event.increaseQuota(ticket.getTicketType());
+                    eventRepository.saveAndFlush(event);
+                }
+
                 break;
             }
         }
 
         if (cancelTransaction == null) {
-            throw new ResourceNotFoundException("Event not found for cancel");
+            throw new ResourceNotFoundException("Transaction not found for cancellation");
         }
+
         transactionRepository.saveAndFlush(cancelTransaction);
     }
 
@@ -93,7 +100,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction haveBeenPaid = null;
         for (Transaction transaction : transactions) {
             if (transaction.getId().equals(id)) {
-                transaction.setStatus(Transaction.Status.CANCELLED);
+                transaction.setStatus(Transaction.Status.PAID);
                 haveBeenPaid = transaction;
                 break;
             }
@@ -107,10 +114,18 @@ public class TransactionServiceImpl implements TransactionService {
         return convertToTransactionResponse(haveBeenPaid);
     }
 
+    @Override
+    public List<TransactionResponse> viewMyTransaction() {
+        User loggedIn = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Customer customer = customerRepository.findByUserId(loggedIn.getId());
+
+        return transactionRepository.findTransactionByCustomerId(customer.getId()).stream()
+                .map(this::convertToTransactionResponse).toList();
+    }
+
     private TicketResponse convertToTicketResponse(Ticket ticket) {
         return TicketResponse.builder()
                 .id(ticket.getId())
-                .customerId(ticket.getCustomer().getId())
                 .eventId(ticket.getEvent().getId())
                 .eventName(ticket.getEvent().getName())
                 .type(ticket.getTicketType())
@@ -129,7 +144,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .id(transaction.getId())
                 .customerId(transaction.getCustomer().getId())
                 .transactionDate(transaction.getTransactionDate())
-                .ticketResponses(convertTicketResponseList(transaction.getTicket()))
+                .tickets(convertTicketResponseList(transaction.getTicket()))
                 .qty(transaction.getQty())
                 .totalPrice(transaction.getTotalPrice())
                 .status(transaction.getStatus())
